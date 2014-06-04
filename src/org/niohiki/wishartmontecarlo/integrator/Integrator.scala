@@ -6,7 +6,7 @@ import ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.collection.mutable.ArrayBuffer
 
-case class IntegratorConfiguration(N: Int, tolerance: Double, sampleSteps: Int, minSamples: Int,
+case class IntegratorConfiguration(tolerance: Double, sampleSteps: Int, minSamples: Int,
   slaves: Int, verbose: Boolean)
 
 object Domains {
@@ -38,24 +38,24 @@ object Domains {
   }
 }
 
-object Integrator {
-  def apply(integrand: Integrand,dom: Domains.Domain)(implicit conf: IntegratorConfiguration) =
-    new UnitIntervalIntegrator(dom.transform(integrand), conf).integrate
+object Integrate {
+  def apply(integrand: Integrand, N: Int, dom: Domains.Domain)(implicit conf: IntegratorConfiguration) =
+    new IntervalIntegration(dom.transform(integrand), N, conf)
 }
 
-class UnitIntervalIntegrator(integrand: Integrand, conf: IntegratorConfiguration) {
-  def sample: Double = {
+class IntervalIntegration(integrand: Integrand, N: Int, conf: IntegratorConfiguration) {
+  private def sample: Double = {
     var sum: Double = 0
     var steps = 0
-    val vector = ArrayBuffer.fill(conf.N)(0.0)
+    val vector = ArrayBuffer.fill(N)(0.0)
     while (steps < conf.sampleSteps) {
-      for (i <- 0 until conf.N) vector(i) = Random.nextDouble
+      for (i <- 0 until N) vector(i) = Random.nextDouble
       sum += integrand(vector)
       steps += 1
     }
     sum / steps
   }
-  def integrate: Double = {
+  lazy val (result, error): (Double, Double) = {
     var samples = 0
     var mean: Double = 0
     var pmean: Double = 0
@@ -86,7 +86,7 @@ class UnitIntervalIntegrator(integrand: Integrand, conf: IntegratorConfiguration
       }
     }
     if (conf.verbose) println("Used " + samples + " samples")
-    mean
+    (mean, Math.sqrt(err))
   }
 }
     

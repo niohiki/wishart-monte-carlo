@@ -3,37 +3,53 @@ package org.niohiki.wishartmontecarlo
 import scala.collection.mutable.ArrayBuffer
 import org.niohiki.wishartmontecarlo.integrator._
 
-trait FreeEnergy {
-  var beta: Double = 1
-  var N: Int = 1
-  var t: Double = 1
-  def V(lambda: Double): Double
-  def domain: Domains.Domain
-  def integrand: ArrayBuffer[Double] => Double = a => {
+case class FreeEnergy(absolute: Double, analytical: Double)
+class FreeEnergyCalculator(system: System, beta: Double, t: Double)(
+  implicit config: IntegratorConfiguration) {
+
+  def result(N: Int) = {
+    val fn = F(N)
+    val fna = FNA(N)
+    FreeEnergy(fn, fn - fna)
+  }
+  private def FNAIntegrand(N: Int): ArrayBuffer[Double] => Double = a => {
     var energy: Double = 0
     for (lambda <- a) {
-      energy += V(lambda) * N * beta / t
+      energy += system.V(lambda, beta, t, N) * N * beta / t
+    }
+    Math.exp(-energy)
+  }
+  private def integrand(N: Int): ArrayBuffer[Double] => Double = a => {
+    var energy: Double = 0
+    for (lambda <- a) {
+      energy += system.V(lambda, beta, t, N) * N * beta / t
     }
     for (i <- 0 until a.length; j <- 0 until i) {
       energy -= 2 * beta * Math.log(Math.abs(a(i) - a(j)))
     }
     Math.exp(-energy)
   }
-  def calculate = {
-    implicit val config = IntegratorConfiguration(N, 0.1, 10000, 200, 2, false)
-    Math.log(Integrator(integrand, domain)) - normalization(N)
-  }
-  def factorial(n: Int): Double = if (n == 0) 1 else n * factorial(n - 1)
-  def normalization(n: Int) = Math.log(Math.pow(2 * Math.PI, n) * factorial(n))
+  private def FNA(N: Int) = N * Math.log(Integrate(FNAIntegrand(N), 1,
+    system.domain(beta, t, N)).result) - (N - 1 / 2) * Math.log(N)
+  private def F(N: Int) = Math.log(Integrate(integrand(N), N,
+    system.domain(beta, t, N)).result) - normalization(N)
+  private def factorial(n: Int): Double = if (n == 0) 1 else n * factorial(n - 1)
+  private def normalization(n: Int) = Math.log(Math.pow(2 * Math.PI, n) * factorial(n))
 }
 
-class Wishart extends FreeEnergy {
-  var zeta: Double = 1
-  def domain = Domains.Positives(zeta)
-  def V(lambda: Double) = lambda - (zeta - (beta - 1) / N) * Math.log(lambda)
+abstract class System(implicit config: IntegratorConfiguration) {
+  def V(lambda: Double, beta: Double, t: Double, N: Int): Double
+  def domain(beta: Double, t: Double, N: Int): Domains.Domain
+  def freeEnergy(beta: Double, t: Double) = new FreeEnergyCalculator(this, beta, t)
+}
+class Wishart(zeta: Double)(implicit config: IntegratorConfiguration) extends System {
+  def domain(beta: Double, t: Double, N: Int) = Domains.Positives(zeta)
+  def V(lambda: Double, beta: Double, t: Double, N: Int) =
+    lambda - (zeta - (beta - 1) / N) * Math.log(lambda)
 }
 
-class Gaussian extends FreeEnergy {
-  def domain = Domains.Reals(0, 0.25 * Math.sqrt(beta * N))
-  def V(lambda: Double) = 0.5 * lambda * lambda
+class Gaussian(implicit config: IntegratorConfiguration) extends System {
+  def domain(beta: Double, t: Double, N: Int) = Domains.Reals(0, 0.25 * Math.sqrt(beta * N / t))
+  def V(lambda: Double, beta: Double, t: Double, N: Int) =
+    0.5 * lambda * lambda
 }
