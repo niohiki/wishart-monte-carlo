@@ -23,7 +23,7 @@ object Main {
     for (n <- 1 to maxN) {
       lazy val f = F(N = n)
       lazy val g = G(N = n)
-      output.println(f.value + "\t" + f.error + "\t" + g.value + "\t" + g.error)
+      output.println(n+","+f.value + "," + f.error + "," + g.value + "," + g.error)
       println("n=" + n + " F-G=" + (f.value - g.value) + " e(F)=" + f.error)
     }
     output.close
