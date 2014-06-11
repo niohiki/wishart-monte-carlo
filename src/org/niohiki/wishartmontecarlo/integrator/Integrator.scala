@@ -6,6 +6,15 @@ import ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.collection.mutable.ArrayBuffer
 
+case class Result(value: Double, error: Double) {
+  def map(f: (Double) => (Double)) = {
+    val nval = f(value)
+    val nmax = f(value * (1 + error))
+    val nmin = f(value * (1 - error))
+    val nerr = Math.abs((nmax - nmin) / (2 * nval))
+    Result(nval, nerr)
+  }
+}
 case class IntegratorConfiguration(tolerance: Double, sampleSteps: Int, minSamples: Int,
   slaves: Int, verbose: Boolean)
 
@@ -55,7 +64,7 @@ class IntervalIntegration(integrand: Integrand, N: Int, conf: IntegratorConfigur
     }
     sum / steps
   }
-  lazy val (result, error): (Double, Double) = {
+  lazy val result = {
     var samples = 0
     var mean: Double = 0
     var pmean: Double = 0
@@ -70,7 +79,7 @@ class IntervalIntegration(integrand: Integrand, N: Int, conf: IntegratorConfigur
         S += next; samples += 1
         pmean = mean; mean = S / samples
         M += (next - pmean) * (next - mean)
-        err = M / (S * S - mean)
+        err = Math.abs(M / (S * S - S * mean))
       }
     }
     while (err > toleranceSqr || samples < conf.minSamples) {
@@ -79,14 +88,16 @@ class IntervalIntegration(integrand: Integrand, N: Int, conf: IntegratorConfigur
         case value => update(value)
       })
       update(sample)
-      logerr = -Math.log10(err)
-      if (logerr > errlevel + 1 / (errlevel * errlevel + 1)) {
-        errlevel += 1 / (errlevel * errlevel + 1)
-        if (conf.verbose) println("V=" + mean + "@" + Math.sqrt(err))
+      if (conf.verbose) {
+        logerr = -Math.log10(err)
+        if (logerr > errlevel + 1 / (errlevel * errlevel + 1)) {
+          errlevel += 1 / (errlevel * errlevel + 1)
+          println("V=" + mean + "@" + Math.sqrt(err))
+        }
       }
     }
     if (conf.verbose) println("Used " + samples + " samples")
-    (mean, Math.sqrt(err))
+    Result(mean, Math.sqrt(err))
   }
 }
     
