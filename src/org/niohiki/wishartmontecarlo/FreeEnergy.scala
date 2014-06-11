@@ -3,7 +3,6 @@ package org.niohiki.wishartmontecarlo
 import scala.collection.mutable.ArrayBuffer
 import org.niohiki.wishartmontecarlo.integrator._
 
-case class FreeEnergy(result: Double, error: Double)
 class FreeEnergyCalculator(system: System, beta: Double, t: Double)(
   implicit config: IntegratorConfiguration) {
 
