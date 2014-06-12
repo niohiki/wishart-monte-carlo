@@ -29,11 +29,10 @@ abstract class System(implicit config: IntegratorConfiguration) {
   def domain(beta: Double, t: Double, N: Int): Domains.Domain
   def freeEnergy(beta: Double, t: Double) = new FreeEnergyCalculator(this, beta, t)
 }
-class Wishart(zeta: Double)(implicit config: IntegratorConfiguration) extends System {
+class Wishart(zeta: Double, ls: Double)(implicit config: IntegratorConfiguration) extends System {
   def domain(beta: Double, t: Double, N: Int) = Domains.Positives(zeta)
-  val subLS = 0
   def V(lambda: Double, beta: Double, t: Double, N: Int) =
-    lambda - (zeta - subLS * (beta - 1) / N) * Math.log(lambda)
+    lambda - (zeta - ls * (beta - 1) / N) * Math.log(lambda)
 }
 
 class Gaussian(implicit config: IntegratorConfiguration) extends System {
