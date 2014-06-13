@@ -1,8 +1,6 @@
-package org.niohiki.wishartmontecarlo
+package org.niohiki.wishartmontecarlo.freeenergies
 
-import scala.util.Random
 import org.niohiki.wishartmontecarlo.integrator._
-import scala.io.Source
 import java.io.PrintWriter
 import java.io.File
 

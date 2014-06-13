@@ -6,50 +6,9 @@ import ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.collection.mutable.ArrayBuffer
 
-case class Result(value: Double, error: Double) {
-  def map(f: (Double) => (Double)) = {
-    val nval = f(value)
-    val nmax = f(value * (1 + error))
-    val nmin = f(value * (1 - error))
-    val nerr = Math.abs((nmax - nmin) / (2 * nval))
-    Result(nval, nerr)
-  }
-}
-case class IntegratorConfiguration(tolerance: Double, sampleSteps: Int, minSamples: Int,
-  slaves: Int, verbose: Boolean)
-
-object Domains {
-  sealed trait Domain {
-    def transform(integrand: Integrand): Integrand
-  }
-  case class UnitInterval() extends Domain {
-    def transform(integrand: Integrand) = integrand
-  }
-  case class Reals(center: Double, width: Double) extends Domain {
-    def transform(integrand: Integrand) = vector => {
-      var measure: Double = 1
-      var tan: Double = 0
-      integrand(vector.map(x => {
-        tan = Math.tan(Math.PI * (x - 1.0 / 2))
-        measure *= width * Math.PI * (tan * tan + 1)
-        width * tan + center
-      })) * measure
-    }
-  }
-  case class Positives(width: Double) extends Domain {
-    def transform(integrand: Integrand) = v => {
-      var measure: Double = 1
-      integrand(v.map(x => {
-        measure *= width / x
-        -width * Math.log(x)
-      })) * measure
-    }
-  }
-}
-
 object Integrate {
   def apply(integrand: Integrand, N: Int, dom: Domains.Domain)(implicit conf: IntegratorConfiguration) =
-    new IntervalIntegration(dom.transform(integrand), N, conf)
+    new IntervalIntegration(dom.mapWithMeasure(integrand), N, conf)
 }
 
 class IntervalIntegration(integrand: Integrand, N: Int, conf: IntegratorConfiguration) {
