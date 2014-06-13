@@ -3,6 +3,8 @@ package org.niohiki.wishartmontecarlo.freeenergies
 import org.niohiki.wishartmontecarlo.integrator._
 import java.io.PrintWriter
 import java.io.File
+import org.niohiki.wishartmontecarlo.systems.Wishart
+import org.niohiki.wishartmontecarlo.systems.Gaussian
 
 object Main {
   def generateFile(beta: Double, t: Double, sl: Double) {
@@ -15,7 +17,7 @@ object Main {
     implicit val config = IntegratorConfiguration(0.01, 250, 50, 2, false)
     val F = new Wishart(zeta, sl).freeEnergy(beta = beta, t = t)
     val G = new Gaussian().freeEnergy(beta = beta, t = t)
-    val output = new PrintWriter(new File("t" + t + "beta" + beta + "sl" + sl + ".csv"))
+    val output = new PrintWriter(new File("fe_t" + t + "beta" + beta + "sl" + sl + ".csv"))
     for (n <- 1 to maxN) {
       lazy val f = F(N = n)
       lazy val g = G(N = n)

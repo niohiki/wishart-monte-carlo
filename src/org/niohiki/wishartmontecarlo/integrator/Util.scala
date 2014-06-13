@@ -41,7 +41,7 @@ class Bins(min: Double, max: Double, n: Int) {
 case class IntegratorConfiguration(tolerance: Double, sampleSteps: Int, minSamples: Int,
   slaves: Int, verbose: Boolean)
 
-case class BinnerConfiguration(min: Double, max: Double, bins: Int, samples: Int)
+case class BinnerConfiguration(min: Double, max: Double, bins: Int, samples: Int, verbose: Boolean)
 
 object Domains {
   sealed trait Domain {
