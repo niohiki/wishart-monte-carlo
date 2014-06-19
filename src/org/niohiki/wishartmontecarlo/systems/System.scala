@@ -44,7 +44,7 @@ abstract class System {
 class Wishart(zeta: Double, sl: Double) extends System {
   def domain(beta: Double, t: Double, N: Int) = Domains.Positives(zeta)
   def V(lambda: Double, beta: Double, t: Double, N: Int) =
-    lambda - (zeta - sl * (beta - 1) / N) * Math.log(lambda)
+    lambda - (zeta + sl * (beta - 1) / (beta * N)) * Math.log(lambda)
 }
 
 class Gaussian extends System {

@@ -12,8 +12,8 @@ case class Result(value: Double, error: Double) {
   }
 }
 class BinResult(from: Bins) {
-  val under = from.under
-  val over = from.over
+  val under = from.normalizedUnder
+  val over = from.normalizedOver
   val bins = from.normalizedBins
   override def toString = "(" + bins.
     map { case (value, point) => "(" + point + "," + value + ")" }.
@@ -21,21 +21,23 @@ class BinResult(from: Bins) {
 }
 
 class Bins(min: Double, max: Double, n: Int) {
-  var under: Double = 0
-  var over: Double = 0
-  val bins = ArrayBuffer.fill[Double](n)(0)
-  val step = (max - min) / n
+  private var under: Double = 0
+  private var over: Double = 0
+  private val bins = ArrayBuffer.fill[Double](n)(0)
+  private val step = (max - min) / n
   def add(value: Double, weight: Double) {
     val index = Math.floor((value - min) / step).toInt
-    if (index < 0) under += 1
-    else if (index >= bins.size) over += 1
+    if (index < 0) under += weight
+    else if (index >= bins.size) over += weight
     else bins(index) += weight
   }
   def midPoint(n: Int) = min + (n + 0.5) * step
+  def norm = bins.reduce(_ + _) + over + under
   def normalizedBins: List[(Double, Double)] = {
-    val norm = bins.reduce(_ + _)
     bins.toList.map(_ / norm).zip(Range(0, n).map(midPoint(_)))
   }
+  def normalizedOver = over / norm
+  def normalizedUnder = under / norm
 }
 
 case class IntegratorConfiguration(tolerance: Double, sampleSteps: Int, minSamples: Int,
